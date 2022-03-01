@@ -1,6 +1,6 @@
 # Non-distributed directories
-src
-test
+/src
+/test
 
 # TS files
 tsconfig.json

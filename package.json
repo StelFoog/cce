@@ -1,6 +1,6 @@
 {
 	"name": "cce-cl",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "C - Compile and Execute",
 	"main": "src/index.ts",
 	"author": "Samuel Larsson",
@@ -10,10 +10,10 @@
 	},
 	"license": "MIT",
 	"scripts": {
-		"build": "tsc && chmod +x dist/src/index.js"
+		"build": "tsc && chmod +x bin/src/index.js"
 	},
 	"bin": {
-		"cce": "dist/src/index.js"
+		"cce": "bin/src/index.js"
 	},
 	"dependencies": {
 		"chalk": "4.x.x",

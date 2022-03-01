@@ -1,5 +1,7 @@
 # C - Compile and Execute
 
+![GitHub package.json version](https://img.shields.io/github/package-json/v/StelFoog/cce)
+
 Compile and execute a C file, all at once.
 
 ## Usage
