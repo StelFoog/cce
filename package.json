@@ -4,6 +4,10 @@
 	"description": "C - Compile and Execute",
 	"main": "src/index.ts",
 	"author": "Samuel Larsson",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/StelFoog/cce.git"
+	},
 	"license": "MIT",
 	"scripts": {
 		"build": "tsc && chmod +x dist/src/index.js"
