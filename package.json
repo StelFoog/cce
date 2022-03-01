@@ -1,9 +1,10 @@
 {
 	"name": "cce-cl",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "C - Compile and Execute",
 	"main": "src/index.ts",
 	"author": "Samuel Larsson",
+	"homepage": "https://github.com/StelFoog/cce#readme",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/StelFoog/cce.git"
