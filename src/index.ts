@@ -21,7 +21,7 @@ const modifiedFile = '__cce_mod__.c';
 
 // Set up command line argumets and options
 const program = new Command();
-program.name(pjson.name).description(pjson.description).version(pjson.version);
+program.name('cce').description(pjson.description).version(pjson.version);
 program
 	.argument('<file>', 'file to compile and run')
 	.option('-c, --compiler <compiler>', 'Compiler to use, defaults to GCC')

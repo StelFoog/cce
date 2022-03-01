@@ -1,14 +1,20 @@
 {
-    "name": "cce",
+    "name": "cce-cl",
     "version": "1.0.0",
     "description": "C - Compile and Execute",
     "main": "src/index.ts",
     "author": "Samuel Larsson",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/StelFoog/cce.git"
+    },
     "license": "MIT",
     "scripts": {
         "build": "tsc && chmod +x dist/src/index.js"
     },
-    "bin": "dist/src/index.js",
+    "bin": {
+        "cce": "dist/src/index.js"
+    },
     "dependencies": {
         "chalk": "4.x.x",
         "commander": "^9.0.0"
