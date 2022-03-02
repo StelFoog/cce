@@ -1,6 +1,6 @@
 {
     "name": "cce-cl",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "description": "C - Compile and Execute",
     "main": "src/index.ts",
     "author": "Samuel Larsson",
@@ -9,6 +9,14 @@
         "type": "git",
         "url": "git+https://github.com/StelFoog/cce.git"
     },
+    "keywords": [
+        "c",
+        "compile",
+        "execute",
+        "run",
+        "cli",
+        "teminal"
+    ],
     "license": "MIT",
     "scripts": {
         "build": "tsc && chmod +x bin/src/index.js",
