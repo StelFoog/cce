@@ -1,6 +1,6 @@
 # C - Compile and Execute
 
-[![GitHub package.json version](https://img.shields.io/github/package-json/v/StelFoog/cce)](https://github.com/StelFoog/cce) [![Run tests](https://img.shields.io/github/workflow/status/StelFoog/cce/Run%20tests?label=tests)](https://github.com/StelFoog/cce/actions/workflows/test.yml)
+[![GitHub package.json version](https://img.shields.io/github/package-json/v/StelFoog/cce)](https://github.com/StelFoog/cce) [![Tests](https://img.shields.io/github/workflow/status/StelFoog/cce/Run%20tests?label=tests)](https://github.com/StelFoog/cce/actions/workflows/test.yml) [![License](https://img.shields.io/github/license/StelFoog/cce)](https://github.com/StelFoog/cce/blob/master/LICENSE.md)
 
 Compile and execute a C file, all at once.
 
