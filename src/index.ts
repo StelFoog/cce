@@ -24,12 +24,15 @@ const program = new Command();
 program.name('cce').description(pjson.description).version(pjson.version, '-v, -V, --version');
 program
 	.argument('<file>', 'file to compile and run')
-	.option('-c, --compiler <compiler>', 'Compiler to use, defaults to GCC')
-	.option('-ca, --compiler-arguments <arguments>', 'Arguments passed to the compiler')
-	.option('-ea, --execute-arguments <arguments>', 'Arguments passed to the executable result')
-	.option('-o, --outfile <name>', 'Name of compiled file, defaults to <file>__cce__.o')
-	.option('-s, --save', 'Saves the file after execution, otherwise it will be deleted')
-	.option('-ai, --as-is', 'Compiles the original file as is. Could result in unexpected behavior');
+	.option('-c, --compiler <compiler>', 'compiler to use, defaults to GCC')
+	.option('-ca, --compiler-arguments <arguments>', 'arguments passed to the compiler')
+	.option('-ea, --execute-arguments <arguments>', 'arguments passed to the executable result')
+	.option('-o, --outfile <name>', 'name of compiled file, defaults to <file>__cce__.o')
+	.option('-s, --save', 'saves the file after execution, otherwise it will be deleted')
+	.option(
+		'-ai, --as-is',
+		'compiles the original file without modification, could result in unexpected behavior during execution phase'
+	);
 program.parse();
 const [file] = program.args;
 const opts = program.opts<Options>();
