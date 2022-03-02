@@ -47,7 +47,7 @@ var pjson = require("../package.json");
 var mainMatch = /main[\n\t ]*?\([^]*?\)[\n\t ]*?\{/;
 var modifiedFile = '__cce_mod__.c';
 var program = new commander_1.Command();
-program.name('cce').description(pjson.description).version(pjson.version);
+program.name('cce').description(pjson.description).version(pjson.version, '-v, -V, --version');
 program
     .argument('<file>', 'file to compile and run')
     .option('-c, --compiler <compiler>', 'Compiler to use, defaults to GCC')
