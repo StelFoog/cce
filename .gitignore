@@ -2,3 +2,6 @@
 node_modules
 yarn.lock
 yarn-error.log
+
+# debugging
+/bin/src/**/*.js.map
