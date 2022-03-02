@@ -11,7 +11,9 @@
 	},
 	"license": "MIT",
 	"scripts": {
-		"build": "tsc && chmod +x bin/src/index.js"
+		"build": "tsc && chmod +x bin/src/index.js",
+		"devenv": "which cce && yarn global remove cce-cl; yarn link",
+		"enddev": "yarn unlink; yarn global add cce-cl"
 	},
 	"bin": {
 		"cce": "bin/src/index.js"
