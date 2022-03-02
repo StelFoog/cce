@@ -1,6 +1,6 @@
 {
 	"name": "cce-cl",
-	"version": "1.0.7",
+	"version": "1.0.8",
 	"description": "C - Compile and Execute",
 	"main": "src/index.ts",
 	"author": "Samuel Larsson",

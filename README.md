@@ -1,8 +1,22 @@
 # C - Compile and Execute
 
-![GitHub package.json version](https://img.shields.io/github/package-json/v/StelFoog/cce)
+[![GitHub package.json version](https://img.shields.io/github/package-json/v/StelFoog/cce)](https://github.com/StelFoog/cce) [![Run tests](https://img.shields.io/github/workflow/status/StelFoog/cce/Run%20tests?label=tests)](https://github.com/StelFoog/cce/actions/workflows/test.yml)
 
 Compile and execute a C file, all at once.
+
+## Installation
+
+**With Yarn** (recomended)
+
+```sh
+yarn global add cce-cl
+```
+
+**With NPM**
+
+```sh
+npm install -g cce-cl
+```
 
 ## Usage
 
