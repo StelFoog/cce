@@ -1,5 +1,24 @@
 #!/usr/bin/env node
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -36,13 +55,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
-var chalk = require("chalk");
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var chalk = __importStar(require("chalk"));
 var child_process_1 = require("child_process");
 var commander_1 = require("commander");
 var fs_1 = require("fs");
 var path = require("path");
-var loading_1 = require("./loading");
+var loading_1 = __importDefault(require("./loading"));
 var pjson = require("../package.json");
 var mainMatch = /main[\n\t ]*?\([^]*?\)[\n\t ]*?\{/;
 var modifiedFile = '__cce_mod__.c';
@@ -69,7 +91,7 @@ var filePath = path.join(process.cwd(), file);
 validateOptions();
 function validateOptions() {
     var _this = this;
-    var validatingLoader = (0, loading_1["default"])('Validating');
+    var validatingLoader = (0, loading_1.default)('Validating');
     var warnings = [];
     if (compilerArguments.match(/(-o|--output)/))
         warnings.push('--compiler-arguments contains an --output option, this could prevent CCE from executing the compiled file. Please use the CCE --outfile (-o) option instead');
@@ -105,7 +127,7 @@ function validateOptions() {
     });
 }
 function compile() {
-    var compileLoader = (0, loading_1["default"])('Compiling');
+    var compileLoader = (0, loading_1.default)('Compiling');
     if (asIs) {
         (0, child_process_1.exec)("".concat(compiler, " ").concat(file).concat(compilerArguments && " ".concat(compilerArguments), " -o ").concat(outfile), function (error, stdout, stderr) {
             if (error) {

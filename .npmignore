@@ -1,7 +1,11 @@
-# Non-distributed directories
+# Source files
 /src
+tsconfig.json
+/bin/src/**/*.js.map
+
+# Testing
+jest.config.js
 /test
 
-# TS files
-tsconfig.json
-
+# Github
+/.github
