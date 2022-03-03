@@ -29,20 +29,20 @@ jobs:
         run: |
           yarn install
           yarn test
-  mac-test:
-    name: Mac test
-    runs-on: macOS-latest
-    strategy:
-      matrix:
-        node-version: [16.x, 17.x]
+  # mac-test:
+  #   name: Mac test
+  #   runs-on: macOS-latest
+  #   strategy:
+  #     matrix:
+  #       node-version: [16.x, 17.x]
 
-    steps:
-      - uses: actions/checkout@v2
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
-        with:
-          node-version: ${{ matrix.node-version }}
-      - name: install and test
-        run: |
-          yarn install
-          yarn test
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Use Node.js ${{ matrix.node-version }}
+  #       uses: actions/setup-node@v2
+  #       with:
+  #         node-version: ${{ matrix.node-version }}
+  #     - name: install and test
+  #       run: |
+  #         yarn install
+  #         yarn test
