@@ -14,6 +14,7 @@ export type Options = {
 	outfile?: string;
 	save?: true;
 	asIs?: true;
+	onlyExecPrints?: true;
 };
 
 const mainMatch = /main[\n\t ]*?\([^]*?\)[\n\t ]*?\{/;
@@ -21,7 +22,7 @@ const modifiedFile = '__cce_mod__.c';
 
 // Set up command line argumets and options
 const program = new Command();
-program.name('cce').description(pjson.description).version(pjson.version, '-v, -V, --version');
+program.name('cce').description(pjson.description).version(pjson.version, '-v, --version');
 program
 	.argument('<file>', 'file to compile and run')
 	.option('-c, --compiler <compiler>', 'compiler to use, defaults to GCC')
@@ -32,6 +33,10 @@ program
 	.option(
 		'-ai, --as-is',
 		'compiles the original file without modification, could result in unexpected behavior during execution phase'
+	)
+	.option(
+		'-oep, --only-exec-prints',
+		"doesn't print or time verification and compile phases, mainly used for testing"
 	);
 program.parse();
 const [file] = program.args;
@@ -45,6 +50,7 @@ const executeArguments = opts?.executeArguments || '';
 const outfile = opts?.outfile || `${file}__cce__.o`;
 const save = opts?.save || false;
 const asIs = opts?.asIs || false;
+const onlyExecPrints = opts?.onlyExecPrints || false;
 
 // Generate the path to the file
 const filePath = path.join(process.cwd(), file);
@@ -53,7 +59,7 @@ const filePath = path.join(process.cwd(), file);
 validateOptions();
 
 function validateOptions() {
-	const validatingLoader = startLoading('Validating');
+	const validatingLoader = !onlyExecPrints && startLoading('Validating');
 
 	let warnings: string[] = [];
 	if (compilerArguments.match(/(-o|--output)/))
@@ -62,20 +68,20 @@ function validateOptions() {
 		);
 
 	if (!existsSync(filePath)) {
-		validatingLoader.error();
+		if (!onlyExecPrints) validatingLoader.error();
 		console.error(`error: file ${filePath} doesn't exist`);
 		process.exit(1);
 	}
 
 	stat(filePath, (error, stats) => {
 		if (error) {
-			validatingLoader.error();
+			if (!onlyExecPrints) validatingLoader.error();
 			console.error(`error: there was an issue retrieving information about the file ${filePath}`);
 			process.exit(1);
 		}
 
 		if (!stats.isFile()) {
-			validatingLoader.error();
+			if (!onlyExecPrints) validatingLoader.error();
 			console.error(`error: ${filePath} is not a file`);
 			process.exit(1);
 		}
@@ -83,13 +89,16 @@ function validateOptions() {
 		// Exists and is a file
 		exec(`which ${compiler}`, async (error) => {
 			if (error) {
-				validatingLoader.error();
+				if (!onlyExecPrints) validatingLoader.error();
 				console.error(`error: compiler ${compiler} doesn't exist`);
 				process.exit(1);
 			}
 
-			validatingLoader.done();
-			warnings.forEach((w) => console.log(`${chalk.hex('#a2e')('Warning:')} ${w}`));
+			if (!onlyExecPrints) {
+				validatingLoader.done();
+				warnings.forEach((w) => console.log(`${chalk.hex('#a2e')('Warning:')} ${w}`));
+			}
+
 			// Compile the code
 			compile();
 		});
@@ -97,20 +106,20 @@ function validateOptions() {
 }
 
 function compile() {
-	const compileLoader = startLoading('Compiling');
+	const compileLoader = !onlyExecPrints && startLoading('Compiling');
 
 	if (asIs) {
 		exec(
 			`${compiler} ${file}${compilerArguments && ` ${compilerArguments}`} -o ${outfile}`,
 			(error, stdout, stderr) => {
 				if (error) {
-					compileLoader.error();
+					if (!onlyExecPrints) compileLoader.error();
 					console.error(stderr);
 					process.exit(1);
 				}
 
 				if (!existsSync(path.join(process.cwd(), outfile))) {
-					compileLoader.error();
+					if (!onlyExecPrints) compileLoader.error();
 					console.error(
 						`error: Compiled file not found where expected, likely caused by compiler ${compiler} not handeling -o in an expected way.` +
 							'\nA possible workaround is to provide the --compiler-arguments and --outfile option with the same filename'
@@ -118,8 +127,10 @@ function compile() {
 					process.exit(1);
 				}
 
-				compileLoader.done();
-				console.log(stdout);
+				if (!onlyExecPrints) {
+					compileLoader.done();
+					console.log(stdout);
+				}
 
 				// Execute the compiled code
 				execute();
@@ -131,7 +142,7 @@ function compile() {
 				`${compiler} ${modifiedFile}${compilerArguments && ` ${compilerArguments}`} -o ${outfile}`,
 				(error, stdout, stderr) => {
 					if (error) {
-						compileLoader.error();
+						if (!onlyExecPrints) compileLoader.error();
 						console.log();
 						console.error(hideMod(stderr));
 						rmSync(`${process.cwd()}/${modifiedFile}`);
@@ -140,7 +151,7 @@ function compile() {
 					rmSync(`${process.cwd()}/${modifiedFile}`);
 
 					if (!existsSync(path.join(process.cwd(), outfile))) {
-						compileLoader.error();
+						if (!onlyExecPrints) compileLoader.error();
 						console.error(
 							`error: Compiled file not found where expected, likely caused by compiler ${compiler} not handeling -o in an expected way.` +
 								'\nA possible workaround is to provide the --compiler-arguments and --outfile option with the same filename'
@@ -148,11 +159,13 @@ function compile() {
 						process.exit(1);
 					}
 
-					compileLoader.done();
-					console.log();
-					if (stderr || stdout) console.log(chalk.bold('Compiler says:'));
-					if (stderr) console.log(hideMod(stderr));
-					if (stdout) console.log(hideMod(stdout));
+					if (!onlyExecPrints) {
+						compileLoader.done();
+						console.log();
+						if (stderr || stdout) console.log(chalk.bold('Compiler says:'));
+						if (stderr) console.log(hideMod(stderr));
+						if (stdout) console.log(hideMod(stdout));
+					}
 
 					// Execute the compiled code
 					execute();
@@ -221,7 +234,7 @@ function execute() {
 	});
 
 	child.on('exit', (code) => {
-		console.error(`Process exited with code ${code}`);
+		console.log(`Process exited with code ${code}`);
 		if (!save) rmSync(outfile);
 		process.exit(0);
 	});

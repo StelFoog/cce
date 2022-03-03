@@ -47,7 +47,7 @@ var pjson = require("../package.json");
 var mainMatch = /main[\n\t ]*?\([^]*?\)[\n\t ]*?\{/;
 var modifiedFile = '__cce_mod__.c';
 var program = new commander_1.Command();
-program.name('cce').description(pjson.description).version(pjson.version, '-v, -V, --version');
+program.name('cce').description(pjson.description).version(pjson.version, '-v, --version');
 program
     .argument('<file>', 'file to compile and run')
     .option('-c, --compiler <compiler>', 'compiler to use, defaults to GCC')
@@ -55,7 +55,8 @@ program
     .option('-ea, --execute-arguments <arguments>', 'arguments passed to the executable result')
     .option('-o, --outfile <name>', 'name of compiled file, defaults to <file>__cce__.o')
     .option('-s, --save', 'saves the file after execution, otherwise it will be deleted')
-    .option('-ai, --as-is', 'compiles the original file without modification, could result in unexpected behavior during execution phase');
+    .option('-ai, --as-is', 'compiles the original file without modification, could result in unexpected behavior during execution phase')
+    .option('-oep, --only-exec-prints', "doesn't print or time verification and compile phases, mainly used for testing");
 program.parse();
 var file = program.args[0];
 var opts = program.opts();
@@ -65,39 +66,46 @@ var executeArguments = (opts === null || opts === void 0 ? void 0 : opts.execute
 var outfile = (opts === null || opts === void 0 ? void 0 : opts.outfile) || "".concat(file, "__cce__.o");
 var save = (opts === null || opts === void 0 ? void 0 : opts.save) || false;
 var asIs = (opts === null || opts === void 0 ? void 0 : opts.asIs) || false;
+var onlyExecPrints = (opts === null || opts === void 0 ? void 0 : opts.onlyExecPrints) || false;
 var filePath = path.join(process.cwd(), file);
 validateOptions();
 function validateOptions() {
     var _this = this;
-    var validatingLoader = (0, loading_1.default)('Validating');
+    var validatingLoader = !onlyExecPrints && (0, loading_1.default)('Validating');
     var warnings = [];
     if (compilerArguments.match(/(-o|--output)/))
         warnings.push('--compiler-arguments contains an --output option, this could prevent CCE from executing the compiled file. Please use the CCE --outfile (-o) option instead');
     if (!(0, fs_1.existsSync)(filePath)) {
-        validatingLoader.error();
+        if (!onlyExecPrints)
+            validatingLoader.error();
         console.error("error: file ".concat(filePath, " doesn't exist"));
         process.exit(1);
     }
     (0, fs_1.stat)(filePath, function (error, stats) {
         if (error) {
-            validatingLoader.error();
+            if (!onlyExecPrints)
+                validatingLoader.error();
             console.error("error: there was an issue retrieving information about the file ".concat(filePath));
             process.exit(1);
         }
         if (!stats.isFile()) {
-            validatingLoader.error();
+            if (!onlyExecPrints)
+                validatingLoader.error();
             console.error("error: ".concat(filePath, " is not a file"));
             process.exit(1);
         }
         (0, child_process_1.exec)("which ".concat(compiler), function (error) { return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (error) {
-                    validatingLoader.error();
+                    if (!onlyExecPrints)
+                        validatingLoader.error();
                     console.error("error: compiler ".concat(compiler, " doesn't exist"));
                     process.exit(1);
                 }
-                validatingLoader.done();
-                warnings.forEach(function (w) { return console.log("".concat(chalk.hex('#a2e')('Warning:'), " ").concat(w)); });
+                if (!onlyExecPrints) {
+                    validatingLoader.done();
+                    warnings.forEach(function (w) { return console.log("".concat(chalk.hex('#a2e')('Warning:'), " ").concat(w)); });
+                }
                 compile();
                 return [2];
             });
@@ -105,22 +113,26 @@ function validateOptions() {
     });
 }
 function compile() {
-    var compileLoader = (0, loading_1.default)('Compiling');
+    var compileLoader = !onlyExecPrints && (0, loading_1.default)('Compiling');
     if (asIs) {
         (0, child_process_1.exec)("".concat(compiler, " ").concat(file).concat(compilerArguments && " ".concat(compilerArguments), " -o ").concat(outfile), function (error, stdout, stderr) {
             if (error) {
-                compileLoader.error();
+                if (!onlyExecPrints)
+                    compileLoader.error();
                 console.error(stderr);
                 process.exit(1);
             }
             if (!(0, fs_1.existsSync)(path.join(process.cwd(), outfile))) {
-                compileLoader.error();
+                if (!onlyExecPrints)
+                    compileLoader.error();
                 console.error("error: Compiled file not found where expected, likely caused by compiler ".concat(compiler, " not handeling -o in an expected way.") +
                     '\nA possible workaround is to provide the --compiler-arguments and --outfile option with the same filename');
                 process.exit(1);
             }
-            compileLoader.done();
-            console.log(stdout);
+            if (!onlyExecPrints) {
+                compileLoader.done();
+                console.log(stdout);
+            }
             execute();
         });
     }
@@ -128,7 +140,8 @@ function compile() {
         generateModFile(function () {
             (0, child_process_1.exec)("".concat(compiler, " ").concat(modifiedFile).concat(compilerArguments && " ".concat(compilerArguments), " -o ").concat(outfile), function (error, stdout, stderr) {
                 if (error) {
-                    compileLoader.error();
+                    if (!onlyExecPrints)
+                        compileLoader.error();
                     console.log();
                     console.error(hideMod(stderr));
                     (0, fs_1.rmSync)("".concat(process.cwd(), "/").concat(modifiedFile));
@@ -136,19 +149,22 @@ function compile() {
                 }
                 (0, fs_1.rmSync)("".concat(process.cwd(), "/").concat(modifiedFile));
                 if (!(0, fs_1.existsSync)(path.join(process.cwd(), outfile))) {
-                    compileLoader.error();
+                    if (!onlyExecPrints)
+                        compileLoader.error();
                     console.error("error: Compiled file not found where expected, likely caused by compiler ".concat(compiler, " not handeling -o in an expected way.") +
                         '\nA possible workaround is to provide the --compiler-arguments and --outfile option with the same filename');
                     process.exit(1);
                 }
-                compileLoader.done();
-                console.log();
-                if (stderr || stdout)
-                    console.log(chalk.bold('Compiler says:'));
-                if (stderr)
-                    console.log(hideMod(stderr));
-                if (stdout)
-                    console.log(hideMod(stdout));
+                if (!onlyExecPrints) {
+                    compileLoader.done();
+                    console.log();
+                    if (stderr || stdout)
+                        console.log(chalk.bold('Compiler says:'));
+                    if (stderr)
+                        console.log(hideMod(stderr));
+                    if (stdout)
+                        console.log(hideMod(stdout));
+                }
                 execute();
             });
         });
@@ -197,7 +213,7 @@ function execute() {
         process.exit(1);
     });
     child.on('exit', function (code) {
-        console.error("Process exited with code ".concat(code));
+        console.log("Process exited with code ".concat(code));
         if (!save)
             (0, fs_1.rmSync)(outfile);
         process.exit(0);

@@ -6,4 +6,5 @@ export declare type Options = {
     outfile?: string;
     save?: true;
     asIs?: true;
+    onlyExecPrints?: true;
 };
