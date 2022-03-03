@@ -7,7 +7,7 @@ import path = require('path');
 import startLoading from './loading';
 import pjson = require('../package.json');
 
-type Options = {
+export type Options = {
 	compiler?: string;
 	compilerArguments?: string;
 	executeArguments?: string;
