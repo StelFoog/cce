@@ -94,7 +94,7 @@ function validateOptions() {
             console.error("error: ".concat(filePath, " is not a file"));
             process.exit(1);
         }
-        (0, child_process_1.exec)("which ".concat(compiler), function (error) { return __awaiter(_this, void 0, void 0, function () {
+        (0, child_process_1.exec)("command -v ".concat(compiler), function (error) { return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (error) {
                     if (!onlyExecPrints)

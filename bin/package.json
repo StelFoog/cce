@@ -22,7 +22,7 @@
     "scripts": {
         "build": "tsc && chmod +x bin/src/index.js",
         "test": "jest",
-        "devenv": "which cce && yarn global remove cce-cl; yarn link",
+        "devenv": "command -v cce && yarn global remove cce-cl; yarn link",
         "enddev": "yarn unlink; yarn global add cce-cl"
     },
     "bin": {

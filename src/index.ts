@@ -87,7 +87,7 @@ function validateOptions() {
 		}
 
 		// Exists and is a file
-		exec(`which ${compiler}`, async (error) => {
+		exec(`command -v ${compiler}`, async (error) => {
 			if (error) {
 				if (!onlyExecPrints) validatingLoader.error();
 				console.error(`error: compiler ${compiler} doesn't exist`);
