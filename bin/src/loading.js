@@ -1,23 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var chalk = require("chalk");
+var loaderIcons = ['▝', '▐', '▗', '▄', '▖', '▌', '▘', '▀'];
 function runningTimer(name, time) {
-    var spinner;
-    switch (Math.floor((time % 8) / 2)) {
-        case 0:
-            spinner = '|';
-            break;
-        case 1:
-            spinner = '/';
-            break;
-        case 2:
-            spinner = '—';
-            break;
-        case 3:
-            spinner = '\\';
-            break;
-    }
-    return "".concat(chalk.bold.gray(spinner), " ").concat(name, " \u2014 ").concat((time / 10).toFixed(1), "s");
+    var loader = loaderIcons[time % loaderIcons.length];
+    return "".concat(chalk.gray(loader), " ").concat(name, " \u2014 ").concat((time / 10).toFixed(1), "s");
 }
 function startLoading(name) {
     var time = 0;

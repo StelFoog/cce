@@ -5,23 +5,11 @@ export type Loader = {
 	error: () => void;
 };
 
+const loaderIcons = ['▝', '▐', '▗', '▄', '▖', '▌', '▘', '▀'];
+
 function runningTimer(name: string, time: number): string {
-	let spinner;
-	switch (Math.floor((time % 8) / 2)) {
-		case 0:
-			spinner = '|';
-			break;
-		case 1:
-			spinner = '/';
-			break;
-		case 2:
-			spinner = '—';
-			break;
-		case 3:
-			spinner = '\\';
-			break;
-	}
-	return `${chalk.bold.gray(spinner)} ${name} — ${(time / 10).toFixed(1)}s`;
+	const loader = loaderIcons[time % loaderIcons.length];
+	return `${chalk.gray(loader)} ${name} — ${(time / 10).toFixed(1)}s`;
 }
 
 export default function startLoading(name: string): Loader {
