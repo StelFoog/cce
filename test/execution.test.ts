@@ -7,6 +7,8 @@ describe('Comiles and executes files', () => {
 	let reinstall = false;
 	let linked = false;
 	beforeAll(() => {
+		jest.setTimeout(20 * 1000);
+
 		const yarnGlobal = execSync('yarn global list').toString();
 		if (yarnGlobal.includes('cce-cl')) {
 			reinstall = true;
@@ -84,6 +86,8 @@ describe('test flags', () => {
 	let reinstall = false;
 	let linked = false;
 	beforeAll(() => {
+		jest.setTimeout(20 * 1000);
+
 		const yarnGlobal = execSync('yarn global list').toString();
 		if (yarnGlobal.includes('cce-cl')) {
 			reinstall = true;
