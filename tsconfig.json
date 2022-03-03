@@ -8,7 +8,8 @@
     "sourceMap": true,
 		"inlineSources": true,
 		"resolveJsonModule": true,
-		"outDir": "./bin"
+		"outDir": "./bin",
+		"declaration": true
 	},
 	"include": ["src/**/*.ts"]
 }
