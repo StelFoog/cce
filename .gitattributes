@@ -1,1 +1,3 @@
-/bin linguist-generated  
+/bin/** linguist-generated  
+
+*.ts linguist-language=TypeScript
