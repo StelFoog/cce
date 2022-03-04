@@ -185,8 +185,9 @@ function generateModFile(callback: () => any): void {
 		const match = mainMatch.exec(original);
 		writeFile(
 			`${process.cwd()}/${modifiedFile}`,
-			original.slice(0, match.index + match[0].length) +
-				'\nsetvbuf(stdout, NULL, _IONBF, 0);' +
+			'#include <stdio.h>\n' +
+				original.slice(0, match.index + match[0].length) +
+				'\nsetvbuf(stdout, (void*)0, _IONBF, 0);' +
 				original.slice(match.index + match[0].length),
 			(error) => {
 				if (error) {

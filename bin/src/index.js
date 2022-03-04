@@ -178,8 +178,9 @@ function generateModFile(callback) {
         }
         var original = data.toString();
         var match = mainMatch.exec(original);
-        (0, fs_1.writeFile)("".concat(process.cwd(), "/").concat(modifiedFile), original.slice(0, match.index + match[0].length) +
-            '\nsetvbuf(stdout, NULL, _IONBF, 0);' +
+        (0, fs_1.writeFile)("".concat(process.cwd(), "/").concat(modifiedFile), '#include <stdio.h>\n' +
+            original.slice(0, match.index + match[0].length) +
+            '\nsetvbuf(stdout, (void*)0, _IONBF, 0);' +
             original.slice(match.index + match[0].length), function (error) {
             if (error) {
                 console.error(error);
