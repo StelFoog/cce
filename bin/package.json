@@ -1,6 +1,6 @@
 {
     "name": "cce-cl",
-    "version": "1.0.15",
+    "version": "1.0.16",
     "description": "C - Compile and Execute",
     "main": "src/index.ts",
     "types": "bin/src/index.d.ts",
@@ -12,6 +12,7 @@
     },
     "keywords": [
         "c",
+        "cce",
         "compile",
         "execute",
         "run",
