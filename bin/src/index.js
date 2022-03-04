@@ -44,6 +44,7 @@ var fs_1 = require("fs");
 var path = require("path");
 var loading_1 = require("./loading");
 var pjson = require("../package.json");
+var parseArgs_1 = require("./parseArgs");
 var mainMatch = /main[\n\t ]*?\([^]*?\)[\n\t ]*?\{/;
 var modifiedFile = '__cce_mod__.c';
 var program = new commander_1.Command();
@@ -53,6 +54,8 @@ program
     .option('-c, --compiler <compiler>', 'compiler to use, defaults to GCC')
     .option('-ca, --compiler-arguments <arguments>', 'arguments passed to the compiler')
     .option('-ea, --execute-arguments <arguments>', 'arguments passed to the executable result')
+    .option('--stdin <file>', 'sets stdin for executable')
+    .option('--stdout <file>', 'sets stdout for executable')
     .option('-o, --outfile <name>', 'name of compiled file, defaults to <file>__cce__.o')
     .option('-s, --save', 'saves the file after execution, otherwise it will be deleted')
     .option('-ai, --as-is', 'compiles the original file without modification, could result in unexpected behavior during execution phase')
@@ -62,7 +65,9 @@ var file = program.args[0];
 var opts = program.opts();
 var compiler = (opts === null || opts === void 0 ? void 0 : opts.compiler) || 'gcc';
 var compilerArguments = (opts === null || opts === void 0 ? void 0 : opts.compilerArguments) || '';
-var executeArguments = (opts === null || opts === void 0 ? void 0 : opts.executeArguments) || '';
+var executeArguments = (0, parseArgs_1.default)((opts === null || opts === void 0 ? void 0 : opts.executeArguments) || '');
+var stdin = (opts === null || opts === void 0 ? void 0 : opts.stdin) || '';
+var stdout = (opts === null || opts === void 0 ? void 0 : opts.stdout) || '';
 var outfile = (opts === null || opts === void 0 ? void 0 : opts.outfile) || "".concat(file, "__cce__.o");
 var save = (opts === null || opts === void 0 ? void 0 : opts.save) || false;
 var asIs = (opts === null || opts === void 0 ? void 0 : opts.asIs) || false;
@@ -72,9 +77,26 @@ validateOptions();
 function validateOptions() {
     var _this = this;
     var validatingLoader = !onlyExecPrints && (0, loading_1.default)('Validating');
+    if (executeArguments.error) {
+        validatingLoader.error();
+        console.error('error: missing dequote from execute arguments');
+        process.exit(1);
+    }
     var warnings = [];
     if (compilerArguments.match(/(-o|--output)/))
-        warnings.push('--compiler-arguments contains an --output option, this could prevent CCE from executing the compiled file. Please use the CCE --outfile (-o) option instead');
+        warnings.push('--compiler-arguments contains an --output option, this could prevent CCE from executing the compiled file, please use the CCE --outfile (-o) option instead');
+    executeArguments.specials.forEach(function (s) {
+        switch (s[0]) {
+            case '<': {
+                warnings.push('--execute-arguments contains redirect <, this will not have any effect, please use CCE --stdin option instead');
+                break;
+            }
+            case '>': {
+                warnings.push('--execute-arguments contains redirect >, this will not have any effect, please use CCE --stdout option instead');
+                break;
+            }
+        }
+    });
     if (!(0, fs_1.existsSync)(filePath)) {
         if (!onlyExecPrints)
             validatingLoader.error();
@@ -198,14 +220,32 @@ function hideMod(text) {
 }
 function execute() {
     (0, child_process_1.execSync)("chmod +x ".concat(outfile));
-    var child = (0, child_process_1.spawn)("./".concat(outfile), executeArguments
-        ? executeArguments.split(' ')
-        : undefined);
+    var child = (0, child_process_1.spawn)("./".concat(outfile), executeArguments.parsed);
+    var stdoutResult = '';
     child.stdout.setEncoding('utf8');
-    child.stdout.pipe(process.stdout);
-    process.stdin.on('data', function (data) {
-        child.stdin.write(data);
-    });
+    if (stdout) {
+        child.stdout.on('data', function (data) {
+            stdoutResult += data.toString();
+        });
+    }
+    else {
+        child.stdout.pipe(process.stdout);
+    }
+    if (stdin) {
+        var stdinFilePath_1 = path.join(process.cwd(), stdin);
+        (0, fs_1.readFile)(stdinFilePath_1, function (error, data) {
+            if (error) {
+                console.error("error: couldn't pass ".concat(stdinFilePath_1, " to stdin, file couldn't be read"));
+                process.exit(1);
+            }
+            child.stdin.write(data + '\0');
+        });
+    }
+    else {
+        process.stdin.on('data', function (data) {
+            child.stdin.write(data);
+        });
+    }
     child.on('error', function (err) {
         console.log('Process Error');
         console.log(err);
@@ -214,10 +254,20 @@ function execute() {
         process.exit(1);
     });
     child.on('exit', function (code) {
-        console.log("Process exited with code ".concat(code));
-        if (!save)
-            (0, fs_1.rmSync)(outfile);
-        process.exit(0);
+        var exitMessage = "Process exited with code ".concat(code);
+        if (stdout) {
+            (0, fs_1.writeFile)(path.join(process.cwd(), stdout), stdoutResult + exitMessage, function () {
+                if (!save)
+                    (0, fs_1.rmSync)(outfile);
+                process.exit(0);
+            });
+        }
+        else {
+            console.log(exitMessage);
+            if (!save)
+                (0, fs_1.rmSync)(outfile);
+            process.exit(0);
+        }
     });
 }
 process.on('SIGINT', function () {

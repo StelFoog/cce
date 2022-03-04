@@ -6,11 +6,14 @@ import { existsSync, readFile, rmSync, stat, writeFile } from 'fs';
 import path = require('path');
 import startLoading from './loading';
 import pjson = require('../package.json');
+import parseArgs from './parseArgs';
 
 export type Options = {
 	compiler?: string;
 	compilerArguments?: string;
 	executeArguments?: string;
+	stdin?: string;
+	stdout?: string;
 	outfile?: string;
 	save?: true;
 	asIs?: true;
@@ -28,6 +31,8 @@ program
 	.option('-c, --compiler <compiler>', 'compiler to use, defaults to GCC')
 	.option('-ca, --compiler-arguments <arguments>', 'arguments passed to the compiler')
 	.option('-ea, --execute-arguments <arguments>', 'arguments passed to the executable result')
+	.option('--stdin <file>', 'sets stdin for executable')
+	.option('--stdout <file>', 'sets stdout for executable')
 	.option('-o, --outfile <name>', 'name of compiled file, defaults to <file>__cce__.o')
 	.option('-s, --save', 'saves the file after execution, otherwise it will be deleted')
 	.option(
@@ -46,7 +51,9 @@ const opts = program.opts<Options>();
 // TODO: Should be extended to use g++ for cpp files
 const compiler = opts?.compiler || 'gcc';
 const compilerArguments = opts?.compilerArguments || '';
-const executeArguments = opts?.executeArguments || '';
+const executeArguments = parseArgs(opts?.executeArguments || '');
+const stdin = opts?.stdin || '';
+const stdout = opts?.stdout || '';
 const outfile = opts?.outfile || `${file}__cce__.o`;
 const save = opts?.save || false;
 const asIs = opts?.asIs || false;
@@ -61,11 +68,36 @@ validateOptions();
 function validateOptions() {
 	const validatingLoader = !onlyExecPrints && startLoading('Validating');
 
+	// Find errors
+	if (executeArguments.error) {
+		validatingLoader.error();
+		console.error('error: missing dequote from execute arguments');
+		process.exit(1);
+	}
+
+	// Find warnings
 	let warnings: string[] = [];
 	if (compilerArguments.match(/(-o|--output)/))
 		warnings.push(
-			'--compiler-arguments contains an --output option, this could prevent CCE from executing the compiled file. Please use the CCE --outfile (-o) option instead'
+			'--compiler-arguments contains an --output option, this could prevent CCE from executing the compiled file, please use the CCE --outfile (-o) option instead'
 		);
+
+	executeArguments.specials.forEach((s) => {
+		switch (s[0]) {
+			case '<': {
+				warnings.push(
+					'--execute-arguments contains redirect <, this will not have any effect, please use CCE --stdin option instead'
+				);
+				break;
+			}
+			case '>': {
+				warnings.push(
+					'--execute-arguments contains redirect >, this will not have any effect, please use CCE --stdout option instead'
+				);
+				break;
+			}
+		}
+	});
 
 	if (!existsSync(filePath)) {
 		if (!onlyExecPrints) validatingLoader.error();
@@ -214,18 +246,34 @@ function hideMod(text: string): string {
 
 function execute() {
 	execSync(`chmod +x ${outfile}`); // in case file isn't automatically made executable
-	const child = spawn(
-		`./${outfile}`,
-		executeArguments
-			? executeArguments.split(' ') /* TODO: Shouldn't split parts in qoutation marks */
-			: undefined
-	);
+	const child = spawn(`./${outfile}`, executeArguments.parsed);
 
+	// stdout
+	let stdoutResult: string = '';
 	child.stdout.setEncoding('utf8');
-	child.stdout.pipe(process.stdout);
-	process.stdin.on('data', (data) => {
-		child.stdin.write(data);
-	});
+	if (stdout) {
+		child.stdout.on('data', (data) => {
+			stdoutResult += data.toString();
+		});
+	} else {
+		child.stdout.pipe(process.stdout);
+	}
+
+	// stdin
+	if (stdin) {
+		const stdinFilePath = path.join(process.cwd(), stdin);
+		readFile(stdinFilePath, (error, data) => {
+			if (error) {
+				console.error(`error: couldn't pass ${stdinFilePath} to stdin, file couldn't be read`);
+				process.exit(1);
+			}
+			child.stdin.write(data + '\0');
+		});
+	} else {
+		process.stdin.on('data', (data) => {
+			child.stdin.write(data);
+		});
+	}
 
 	child.on('error', (err) => {
 		console.log('Process Error');
@@ -235,9 +283,18 @@ function execute() {
 	});
 
 	child.on('exit', (code) => {
-		console.log(`Process exited with code ${code}`);
-		if (!save) rmSync(outfile);
-		process.exit(0);
+		const exitMessage = `Process exited with code ${code}`;
+
+		if (stdout) {
+			writeFile(path.join(process.cwd(), stdout), stdoutResult + exitMessage, () => {
+				if (!save) rmSync(outfile);
+				process.exit(0);
+			});
+		} else {
+			console.log(exitMessage);
+			if (!save) rmSync(outfile);
+			process.exit(0);
+		}
 	});
 }
 

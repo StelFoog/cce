@@ -166,4 +166,40 @@ describe('test flags', () => {
 		},
 		timeout
 	);
+
+	test(
+		'--stdin flag',
+		(done) => {
+			exec('cce test/cfiles/input.c -oep --stdin test/input', (error, stdout, stderr) => {
+				expect(error).toEqual(null);
+				expect(stdout).toEqual(
+					`recived: 17\nrecived: 4\nrecived: 22\n\nsum: 43\nProcess exited with code 0\n`
+				);
+				expect(stderr).toEqual('');
+				done();
+			});
+		},
+		timeout
+	);
+
+	test(
+		'--stdout flag',
+		(done) => {
+			exec(
+				'cce test/cfiles/args.c -ea "foo" -oep --stdout test/output',
+				(error, stdout, stderr) => {
+					expect(error).toEqual(null);
+					expect(stdout).toEqual('');
+					expect(stderr).toEqual('');
+					const outfilePath = path.join(process.cwd(), 'test/output');
+					expect(readFileSync(outfilePath).toString()).toEqual(
+						'Argument 1: foo\n1 total arguments\nProcess exited with code 0'
+					);
+					rmSync(outfilePath);
+					done();
+				}
+			);
+		},
+		timeout
+	);
 });
