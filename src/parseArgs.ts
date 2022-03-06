@@ -1,4 +1,4 @@
-type ParsedObject = {
+export type ParsedObject = {
 	parsed: string[];
 	error: boolean;
 	specials: string[];
