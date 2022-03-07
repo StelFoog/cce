@@ -6,16 +6,21 @@ import { cceParams } from '.';
 import startLoading from './loading';
 
 export const mainMatch = /main[\n\t ]*?\([^]*?\)[\n\t ]*?\{/;
-export const modifiedFile = '__cce_mod__.c';
+const modifiedFileName = '__cce_mod__.c';
+let modFile = '';
 
-export default function compilePhase(params: cceParams, callback: () => any): void {
+export default function compilePhase(
+	params: cceParams,
+	files: string[],
+	callback: () => any
+): void {
 	const { file, onlyExecPrints, asIs, compiler, compilerArguments, outfile } = params;
 
 	const compileLoader = !onlyExecPrints && startLoading('Compiling');
 
 	if (asIs) {
 		exec(
-			`${compiler} ${file} ${compilerArguments || ''} -o ${outfile}`,
+			`${compiler} ${file} ${files.join(' ')} ${compilerArguments} -o ${outfile}`,
 			(error, stdout, stderr) => {
 				if (error) {
 					if (!onlyExecPrints) compileLoader.error();
@@ -43,17 +48,18 @@ export default function compilePhase(params: cceParams, callback: () => any): vo
 		);
 	} else {
 		generateModFile(file, () => {
+			// console.log(`${compiler} ${modFile} ${files.join(' ')} ${compilerArguments} -o ${outfile}`);
 			exec(
-				`${compiler} ${modifiedFile}${compilerArguments && ` ${compilerArguments}`} -o ${outfile}`,
+				`${compiler} ${modFile} ${files.join(' ')} ${compilerArguments} -o ${outfile}`,
 				(error, stdout, stderr) => {
 					if (error) {
 						if (!onlyExecPrints) compileLoader.error();
 						console.log();
 						console.error(hideMod(file, stderr));
-						rmSync(`${process.cwd()}/${modifiedFile}`);
+						rmSync(modFile);
 						process.exit(1);
 					}
-					rmSync(`${process.cwd()}/${modifiedFile}`);
+					rmSync(modFile);
 
 					if (!existsSync(path.join(process.cwd(), outfile))) {
 						if (!onlyExecPrints) compileLoader.error();
@@ -88,8 +94,9 @@ function generateModFile(file: string, callback: () => any): void {
 		}
 		const original = data.toString();
 		const match = mainMatch.exec(original);
+		modFile = path.join(process.cwd(), file, '..', modifiedFileName);
 		writeFile(
-			`${process.cwd()}/${modifiedFile}`,
+			modFile,
 			'#include <stdio.h>\n' +
 				original.slice(0, match.index + match[0].length) +
 				'\nsetvbuf(stdout, (void*)0, _IONBF, 0);' +
@@ -108,7 +115,7 @@ function generateModFile(file: string, callback: () => any): void {
 
 function hideMod(file: string, text: string): string {
 	return (
-		text.replace(new RegExp(modifiedFile, 'g'), file) +
+		text.replace(new RegExp(modFile, 'g'), file) +
 		`\n${chalk
 			.hex('#e83')
 			.bold(

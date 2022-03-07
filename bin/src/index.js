@@ -48,8 +48,8 @@ var cceParams = {
     asIs: asIs,
     onlyExecPrints: onlyExecPrints,
 };
-(0, validatePhase_1.default)(cceParams, function () {
-    (0, compilePhase_1.default)(cceParams, function () {
+(0, validatePhase_1.default)(cceParams, function (includedFiles) {
+    (0, compilePhase_1.default)(cceParams, includedFiles, function () {
         (0, executePhase_1.default)(cceParams);
     });
 });

@@ -1,18 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.modifiedFile = exports.mainMatch = void 0;
+exports.mainMatch = void 0;
 var chalk = require("chalk");
 var child_process_1 = require("child_process");
 var fs_1 = require("fs");
 var path = require("path");
 var loading_1 = require("./loading");
 exports.mainMatch = /main[\n\t ]*?\([^]*?\)[\n\t ]*?\{/;
-exports.modifiedFile = '__cce_mod__.c';
-function compilePhase(params, callback) {
+var modifiedFileName = '__cce_mod__.c';
+var modFile = '';
+function compilePhase(params, files, callback) {
     var file = params.file, onlyExecPrints = params.onlyExecPrints, asIs = params.asIs, compiler = params.compiler, compilerArguments = params.compilerArguments, outfile = params.outfile;
     var compileLoader = !onlyExecPrints && (0, loading_1.default)('Compiling');
     if (asIs) {
-        (0, child_process_1.exec)("".concat(compiler, " ").concat(file, " ").concat(compilerArguments || '', " -o ").concat(outfile), function (error, stdout, stderr) {
+        (0, child_process_1.exec)("".concat(compiler, " ").concat(file, " ").concat(files.join(' '), " ").concat(compilerArguments, " -o ").concat(outfile), function (error, stdout, stderr) {
             if (error) {
                 if (!onlyExecPrints)
                     compileLoader.error();
@@ -35,16 +36,16 @@ function compilePhase(params, callback) {
     }
     else {
         generateModFile(file, function () {
-            (0, child_process_1.exec)("".concat(compiler, " ").concat(exports.modifiedFile).concat(compilerArguments && " ".concat(compilerArguments), " -o ").concat(outfile), function (error, stdout, stderr) {
+            (0, child_process_1.exec)("".concat(compiler, " ").concat(modFile, " ").concat(files.join(' '), " ").concat(compilerArguments, " -o ").concat(outfile), function (error, stdout, stderr) {
                 if (error) {
                     if (!onlyExecPrints)
                         compileLoader.error();
                     console.log();
                     console.error(hideMod(file, stderr));
-                    (0, fs_1.rmSync)("".concat(process.cwd(), "/").concat(exports.modifiedFile));
+                    (0, fs_1.rmSync)(modFile);
                     process.exit(1);
                 }
-                (0, fs_1.rmSync)("".concat(process.cwd(), "/").concat(exports.modifiedFile));
+                (0, fs_1.rmSync)(modFile);
                 if (!(0, fs_1.existsSync)(path.join(process.cwd(), outfile))) {
                     if (!onlyExecPrints)
                         compileLoader.error();
@@ -76,7 +77,8 @@ function generateModFile(file, callback) {
         }
         var original = data.toString();
         var match = exports.mainMatch.exec(original);
-        (0, fs_1.writeFile)("".concat(process.cwd(), "/").concat(exports.modifiedFile), '#include <stdio.h>\n' +
+        modFile = path.join(process.cwd(), file, '..', modifiedFileName);
+        (0, fs_1.writeFile)(modFile, '#include <stdio.h>\n' +
             original.slice(0, match.index + match[0].length) +
             '\nsetvbuf(stdout, (void*)0, _IONBF, 0);' +
             original.slice(match.index + match[0].length), function (error) {
@@ -89,7 +91,7 @@ function generateModFile(file, callback) {
     });
 }
 function hideMod(file, text) {
-    return (text.replace(new RegExp(exports.modifiedFile, 'g'), file) +
+    return (text.replace(new RegExp(modFile, 'g'), file) +
         "\n".concat(chalk
             .hex('#e83')
             .bold('Note:'), " Row numbers can be of by one. Run with flag -ai to get exact values from compilation errors and warnings"));

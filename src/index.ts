@@ -90,8 +90,8 @@ const cceParams: cceParams = {
 };
 
 // Run CCE phases
-validatePhase(cceParams, () => {
-	compilePhase(cceParams, () => {
+validatePhase(cceParams, (includedFiles) => {
+	compilePhase(cceParams, includedFiles, () => {
 		executePhase(cceParams);
 	});
 });

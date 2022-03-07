@@ -100,6 +100,21 @@ describe('Comiles and executes files', () => {
 		},
 		timeout
 	);
+
+	test(
+		'test/cfiles/include/index.c',
+		(done) => {
+			exec('cce test/cfiles/include/index.c -oep -ea "Foo bar"', (error, stdout, stderr) => {
+				expect(error).toEqual(null);
+				expect(stdout).toEqual(
+					'Include test\nHello world!\nArgument 1: Foo\nArgument 2: bar\nProcess exited with code 0\n'
+				);
+				expect(stderr).toEqual('');
+				done();
+			});
+		},
+		timeout
+	);
 });
 
 describe('test flags', () => {
