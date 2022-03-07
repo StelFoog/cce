@@ -3,9 +3,13 @@ import { exec } from 'child_process';
 import { existsSync, stat } from 'fs';
 import * as path from 'path';
 import { cceParams } from '.';
+import includedFiles from './includedFiles';
 import startLoading from './loading';
 
-export default function validatePhase(params: cceParams, callback: () => any): void {
+export default function validatePhase(
+	params: cceParams,
+	callback: (includedFiles: string[]) => any
+): void {
 	const { file, onlyExecPrints, executeArguments, compilerArguments, compiler } = params;
 	const filePath = path.join(process.cwd(), file);
 
@@ -15,6 +19,26 @@ export default function validatePhase(params: cceParams, callback: () => any): v
 	if (executeArguments.error) {
 		validatingLoader.error();
 		console.error('error: missing dequote from execute arguments');
+		process.exit(1);
+	}
+
+	// Find file
+	if (!existsSync(path.join(process.cwd(), file))) {
+		validatingLoader.error();
+		console.error(`error: can't find file ${file}`);
+		process.exit(1);
+	}
+	// Find included files
+	const allFiles = includedFiles(path.join(process.cwd(), file));
+	const missingFiles: string[] = [];
+	allFiles.forEach((f) => {
+		if (!existsSync(f)) missingFiles.push(f);
+	});
+	if (missingFiles.length) {
+		validatingLoader.error();
+		missingFiles.forEach((f) => {
+			console.error(`error: can't find file ${f}`);
+		});
 		process.exit(1);
 	}
 
@@ -75,7 +99,7 @@ export default function validatePhase(params: cceParams, callback: () => any): v
 			}
 
 			// Next phase
-			callback();
+			callback(allFiles);
 		});
 	});
 }

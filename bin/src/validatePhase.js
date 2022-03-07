@@ -40,6 +40,7 @@ var chalk = require("chalk");
 var child_process_1 = require("child_process");
 var fs_1 = require("fs");
 var path = require("path");
+var includedFiles_1 = require("./includedFiles");
 var loading_1 = require("./loading");
 function validatePhase(params, callback) {
     var _this = this;
@@ -49,6 +50,24 @@ function validatePhase(params, callback) {
     if (executeArguments.error) {
         validatingLoader.error();
         console.error('error: missing dequote from execute arguments');
+        process.exit(1);
+    }
+    if (!(0, fs_1.existsSync)(path.join(process.cwd(), file))) {
+        validatingLoader.error();
+        console.error("error: can't find file ".concat(file));
+        process.exit(1);
+    }
+    var allFiles = (0, includedFiles_1.default)(path.join(process.cwd(), file));
+    var missingFiles = [];
+    allFiles.forEach(function (f) {
+        if (!(0, fs_1.existsSync)(f))
+            missingFiles.push(f);
+    });
+    if (missingFiles.length) {
+        validatingLoader.error();
+        missingFiles.forEach(function (f) {
+            console.error("error: can't find file ".concat(f));
+        });
         process.exit(1);
     }
     var warnings = [];
@@ -97,7 +116,7 @@ function validatePhase(params, callback) {
                     validatingLoader.done();
                     warnings.forEach(function (w) { return console.log("".concat(chalk.hex('#a2e')('Warning:'), " ").concat(w)); });
                 }
-                callback();
+                callback(allFiles);
                 return [2];
             });
         }); });
