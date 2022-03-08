@@ -1,10 +1,7 @@
 #!/usr/bin/env node
-import * as chalk from 'chalk';
-import { exec, execSync, spawn } from 'child_process';
 import { Command } from 'commander';
-import { existsSync, readFile, rmSync, stat, writeFile } from 'fs';
+import { existsSync, rmSync } from 'fs';
 import path = require('path');
-import startLoading from './loading';
 import pjson = require('../package.json');
 import parseArgs, { ParsedObject } from './parseArgs';
 import validatePhase from './validatePhase';
@@ -36,8 +33,7 @@ export type cceParams = {
 	onlyExecPrints: boolean;
 };
 
-const mainMatch = /main[\n\t ]*?\([^]*?\)[\n\t ]*?\{/;
-const modifiedFile = '__cce_mod__.c';
+const modifiedFileName = '__cce_mod__.c';
 
 // Set up command line argumets and options
 const program = new Command();
@@ -98,8 +94,8 @@ validatePhase(cceParams, (includedFiles) => {
 
 process.on('SIGINT', () => {
 	console.log('\nPerforming cleanup...');
-	if (existsSync(path.join(process.cwd(), modifiedFile)))
-		rmSync(path.join(process.cwd(), modifiedFile));
+	if (existsSync(path.join(process.cwd(), file, '..', modifiedFileName)))
+		rmSync(path.join(process.cwd(), file, '..', modifiedFileName));
 	if (existsSync(path.join(process.cwd(), outfile))) rmSync(path.join(process.cwd(), outfile));
 	console.log('Cleanup complete');
 	process.exit(0);
