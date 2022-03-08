@@ -48,7 +48,6 @@ export default function compilePhase(
 		);
 	} else {
 		generateModFile(file, () => {
-			// console.log(`${compiler} ${modFile} ${files.join(' ')} ${compilerArguments} -o ${outfile}`);
 			exec(
 				`${compiler} ${modFile} ${files.join(' ')} ${compilerArguments} -o ${outfile}`,
 				(error, stdout, stderr) => {
