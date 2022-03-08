@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "./argPrinter.h"
+
 int main(int argc, char* argv[]) {
-  for (int i = 1; i < argc; i++) {
-    printf("Argument %d: %s\n", i, argv[i]);
-  }
+  argumentPrinter(argc, argv);
 
   printf("%d total arguments\n", argc - 1);
 

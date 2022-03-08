@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import * as chalk from 'chalk';
-import { exec, execSync, spawn } from 'child_process';
 import { Command } from 'commander';
-import { existsSync, readFile, rmSync, stat, writeFile } from 'fs';
+import { existsSync, rmSync } from 'fs';
 import path = require('path');
-import startLoading from './loading';
 import pjson = require('../package.json');
-import parseArgs from './parseArgs';
+import parseArgs, { ParsedObject } from './parseArgs';
+import validatePhase from './validatePhase';
+import compilePhase from './compilePhase';
+import executePhase from './executePhase';
 
 export type Options = {
 	compiler?: string;
@@ -20,8 +20,20 @@ export type Options = {
 	onlyExecPrints?: true;
 };
 
-const mainMatch = /main[\n\t ]*?\([^]*?\)[\n\t ]*?\{/;
-const modifiedFile = '__cce_mod__.c';
+export type cceParams = {
+	file: string;
+	compiler: string;
+	compilerArguments: string;
+	executeArguments: ParsedObject;
+	stdin: string;
+	stdout: string;
+	outfile: string;
+	save: boolean;
+	asIs: boolean;
+	onlyExecPrints: boolean;
+};
+
+const modifiedFileName = '__cce_mod__.c';
 
 // Set up command line argumets and options
 const program = new Command();
@@ -59,249 +71,32 @@ const save = opts?.save || false;
 const asIs = opts?.asIs || false;
 const onlyExecPrints = opts?.onlyExecPrints || false;
 
-// Generate the path to the file
-const filePath = path.join(process.cwd(), file);
+// Create params object
+const cceParams: cceParams = {
+	file,
+	compiler,
+	compilerArguments,
+	executeArguments,
+	stdin,
+	stdout,
+	outfile,
+	save,
+	asIs,
+	onlyExecPrints,
+};
 
-// Validate options
-validateOptions();
-
-function validateOptions() {
-	const validatingLoader = !onlyExecPrints && startLoading('Validating');
-
-	// Find errors
-	if (executeArguments.error) {
-		validatingLoader.error();
-		console.error('error: missing dequote from execute arguments');
-		process.exit(1);
-	}
-
-	// Find warnings
-	let warnings: string[] = [];
-	if (compilerArguments.match(/(-o|--output)/))
-		warnings.push(
-			'--compiler-arguments contains an --output option, this could prevent CCE from executing the compiled file, please use the CCE --outfile (-o) option instead'
-		);
-
-	executeArguments.specials.forEach((s) => {
-		switch (s[0]) {
-			case '<': {
-				warnings.push(
-					'--execute-arguments contains redirect <, this will not have any effect, please use CCE --stdin option instead'
-				);
-				break;
-			}
-			case '>': {
-				warnings.push(
-					'--execute-arguments contains redirect >, this will not have any effect, please use CCE --stdout option instead'
-				);
-				break;
-			}
-		}
+// Run CCE phases
+validatePhase(cceParams, (includedFiles) => {
+	compilePhase(cceParams, includedFiles, () => {
+		executePhase(cceParams);
 	});
-
-	if (!existsSync(filePath)) {
-		if (!onlyExecPrints) validatingLoader.error();
-		console.error(`error: file ${filePath} doesn't exist`);
-		process.exit(1);
-	}
-
-	stat(filePath, (error, stats) => {
-		if (error) {
-			if (!onlyExecPrints) validatingLoader.error();
-			console.error(`error: there was an issue retrieving information about the file ${filePath}`);
-			process.exit(1);
-		}
-
-		if (!stats.isFile()) {
-			if (!onlyExecPrints) validatingLoader.error();
-			console.error(`error: ${filePath} is not a file`);
-			process.exit(1);
-		}
-
-		// Exists and is a file
-		exec(`command -v ${compiler}`, async (error) => {
-			if (error) {
-				if (!onlyExecPrints) validatingLoader.error();
-				console.error(`error: compiler ${compiler} doesn't exist`);
-				process.exit(1);
-			}
-
-			if (!onlyExecPrints) {
-				validatingLoader.done();
-				warnings.forEach((w) => console.log(`${chalk.hex('#a2e')('Warning:')} ${w}`));
-			}
-
-			// Compile the code
-			compile();
-		});
-	});
-}
-
-function compile() {
-	const compileLoader = !onlyExecPrints && startLoading('Compiling');
-
-	if (asIs) {
-		exec(
-			`${compiler} ${file}${compilerArguments && ` ${compilerArguments}`} -o ${outfile}`,
-			(error, stdout, stderr) => {
-				if (error) {
-					if (!onlyExecPrints) compileLoader.error();
-					console.error(stderr);
-					process.exit(1);
-				}
-
-				if (!existsSync(path.join(process.cwd(), outfile))) {
-					if (!onlyExecPrints) compileLoader.error();
-					console.error(
-						`error: Compiled file not found where expected, likely caused by compiler ${compiler} not handeling -o in an expected way.` +
-							'\nA possible workaround is to provide the --compiler-arguments and --outfile option with the same filename'
-					);
-					process.exit(1);
-				}
-
-				if (!onlyExecPrints) {
-					compileLoader.done();
-					console.log(stdout);
-				}
-
-				// Execute the compiled code
-				execute();
-			}
-		);
-	} else {
-		generateModFile(() => {
-			exec(
-				`${compiler} ${modifiedFile}${compilerArguments && ` ${compilerArguments}`} -o ${outfile}`,
-				(error, stdout, stderr) => {
-					if (error) {
-						if (!onlyExecPrints) compileLoader.error();
-						console.log();
-						console.error(hideMod(stderr));
-						rmSync(`${process.cwd()}/${modifiedFile}`);
-						process.exit(1);
-					}
-					rmSync(`${process.cwd()}/${modifiedFile}`);
-
-					if (!existsSync(path.join(process.cwd(), outfile))) {
-						if (!onlyExecPrints) compileLoader.error();
-						console.error(
-							`error: Compiled file not found where expected, likely caused by compiler ${compiler} not handeling -o in an expected way.` +
-								'\nA possible workaround is to provide the --compiler-arguments and --outfile option with the same filename'
-						);
-						process.exit(1);
-					}
-
-					if (!onlyExecPrints) {
-						compileLoader.done();
-						console.log();
-						if (stderr || stdout) console.log(chalk.bold('Compiler says:'));
-						if (stderr) console.log(hideMod(stderr));
-						if (stdout) console.log(hideMod(stdout));
-					}
-
-					// Execute the compiled code
-					execute();
-				}
-			);
-		});
-	}
-}
-
-function generateModFile(callback: () => any): void {
-	readFile(file, (error, data) => {
-		if (error) {
-			console.error(error);
-			process.exit(1);
-		}
-		const original = data.toString();
-		const match = mainMatch.exec(original);
-		writeFile(
-			`${process.cwd()}/${modifiedFile}`,
-			'#include <stdio.h>\n' +
-				original.slice(0, match.index + match[0].length) +
-				'\nsetvbuf(stdout, (void*)0, _IONBF, 0);' +
-				original.slice(match.index + match[0].length),
-			(error) => {
-				if (error) {
-					console.error(error);
-					process.exit(1);
-				}
-
-				callback();
-			}
-		);
-	});
-}
-
-function hideMod(text: string): string {
-	return (
-		text.replace(new RegExp(modifiedFile, 'g'), file) +
-		`\n${chalk
-			.hex('#e83')
-			.bold(
-				'Note:'
-			)} Row numbers can be of by one. Run with flag -ai to get exact values from compilation errors and warnings`
-	);
-}
-
-function execute() {
-	execSync(`chmod +x ${outfile}`); // in case file isn't automatically made executable
-	const child = spawn(`./${outfile}`, executeArguments.parsed);
-
-	// stdout
-	let stdoutResult: string = '';
-	child.stdout.setEncoding('utf8');
-	if (stdout) {
-		child.stdout.on('data', (data) => {
-			stdoutResult += data.toString();
-		});
-	} else {
-		child.stdout.pipe(process.stdout);
-	}
-
-	// stdin
-	if (stdin) {
-		const stdinFilePath = path.join(process.cwd(), stdin);
-		readFile(stdinFilePath, (error, data) => {
-			if (error) {
-				console.error(`error: couldn't pass ${stdinFilePath} to stdin, file couldn't be read`);
-				process.exit(1);
-			}
-			child.stdin.write(data + '\0');
-		});
-	} else {
-		process.stdin.on('data', (data) => {
-			child.stdin.write(data);
-		});
-	}
-
-	child.on('error', (err) => {
-		console.log('Process Error');
-		console.log(err);
-		if (!save) rmSync(outfile);
-		process.exit(1);
-	});
-
-	child.on('exit', (code) => {
-		const exitMessage = `Process exited with code ${code}`;
-
-		if (stdout) {
-			writeFile(path.join(process.cwd(), stdout), stdoutResult + exitMessage, () => {
-				if (!save) rmSync(outfile);
-				process.exit(0);
-			});
-		} else {
-			console.log(exitMessage);
-			if (!save) rmSync(outfile);
-			process.exit(0);
-		}
-	});
-}
+});
 
 process.on('SIGINT', () => {
 	console.log('\nPerforming cleanup...');
-	if (existsSync(`${process.cwd()}/${modifiedFile}`)) rmSync(`${process.cwd()}/${modifiedFile}`);
-	if (existsSync(`${process.cwd()}/${outfile}`)) rmSync(`${process.cwd()}/${outfile}`);
+	if (existsSync(path.join(process.cwd(), file, '..', modifiedFileName)))
+		rmSync(path.join(process.cwd(), file, '..', modifiedFileName));
+	if (existsSync(path.join(process.cwd(), outfile))) rmSync(path.join(process.cwd(), outfile));
 	console.log('Cleanup complete');
 	process.exit(0);
 });

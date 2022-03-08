@@ -1,3 +1,5 @@
+import path from 'path';
+import includedFiles from '../src/includedFiles';
 import parseArgs from '../src/parseArgs';
 
 describe('parseArgs arguments', () => {
@@ -109,5 +111,21 @@ describe('parseArgs special characters', () => {
 			error: false,
 			specials: ['<'],
 		});
+	});
+});
+
+describe('includedFiles', () => {
+	test('test/cfiles/args.c', () => {
+		expect(includedFiles(path.join(process.cwd(), 'test/cfiles/args.c'))).toEqual([
+			path.join(process.cwd(), 'test/cfiles/argPrinter.c'),
+		]);
+	});
+
+	test('test/cfiles/include/index.c', () => {
+		expect(includedFiles(path.join(process.cwd(), 'test/cfiles/include/index.c'))).toEqual([
+			path.join(process.cwd(), 'test/cfiles/include/args.c'),
+			path.join(process.cwd(), 'test/cfiles/argPrinter.c'),
+			path.join(process.cwd(), 'test/cfiles/include/hello/world.c'),
+		]);
 	});
 });
