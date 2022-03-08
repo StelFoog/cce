@@ -9,8 +9,7 @@ var parseArgs_1 = require("./parseArgs");
 var validatePhase_1 = require("./validatePhase");
 var compilePhase_1 = require("./compilePhase");
 var executePhase_1 = require("./executePhase");
-var mainMatch = /main[\n\t ]*?\([^]*?\)[\n\t ]*?\{/;
-var modifiedFile = '__cce_mod__.c';
+var modifiedFileName = '__cce_mod__.c';
 var program = new commander_1.Command();
 program.name('cce').description(pjson.description).version(pjson.version, '-v, --version');
 program
@@ -55,8 +54,8 @@ var cceParams = {
 });
 process.on('SIGINT', function () {
     console.log('\nPerforming cleanup...');
-    if ((0, fs_1.existsSync)(path.join(process.cwd(), modifiedFile)))
-        (0, fs_1.rmSync)(path.join(process.cwd(), modifiedFile));
+    if ((0, fs_1.existsSync)(path.join(process.cwd(), file, '..', modifiedFileName)))
+        (0, fs_1.rmSync)(path.join(process.cwd(), file, '..', modifiedFileName));
     if ((0, fs_1.existsSync)(path.join(process.cwd(), outfile)))
         (0, fs_1.rmSync)(path.join(process.cwd(), outfile));
     console.log('Cleanup complete');
